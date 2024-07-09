@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mesclar PDFs</title>
+    <title>Mesclar e Separar PDFs</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
+            background: radial-gradient(circle at center center, black, #1162ac);
+            color: white;
         }
         .pdf-item {
             display: flex;
@@ -26,20 +28,29 @@
             margin-top: 20px;
             padding: 10px;
             font-size: 16px;
+            background-color: #1162ac;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0e4f87;
         }
     </style>
 </head>
 <body>
-    <h1>Mesclar PDFs</h1>
+    <h1>Mesclar e Separar PDFs</h1>
     <input type="file" id="entrada-pdf" multiple accept="application/pdf">
     <div class="lista-pdfs" id="lista-pdfs"></div>
     <button id="exportar-pdf">Exportar PDF Mesclado</button>
+    <button id="separar-pdf">Separar PDFs</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script>
         const entradaPdf = document.getElementById('entrada-pdf');
         const listaPdfs = document.getElementById('lista-pdfs');
         const botaoExportar = document.getElementById('exportar-pdf');
+        const botaoSeparar = document.getElementById('separar-pdf');
         let arquivosPdf = [];
 
         entradaPdf.addEventListener('change', (evento) => {
@@ -109,7 +120,22 @@
             baixar(arquivoPdfMesclado, 'mesclado.pdf', 'application/pdf');
         }
 
+        async function separarPDFs() {
+            for (const arquivo of arquivosPdf) {
+                const arrayBuffer = await arquivo.arrayBuffer();
+                const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
+                for (const [index, pagina] of pdf.getPages().entries()) {
+                    const novoPdf = await PDFLib.PDFDocument.create();
+                    const [paginaCopiada] = await novoPdf.copyPages(pdf, [index]);
+                    novoPdf.addPage(paginaCopiada);
+                    const pdfSeparado = await novoPdf.save();
+                    baixar(pdfSeparado, `${arquivo.name.replace('.pdf', '')}_pagina_${index + 1}.pdf`, 'application/pdf');
+                }
+            }
+        }
+
         botaoExportar.addEventListener('click', mesclarPDFs);
+        botaoSeparar.addEventListener('click', separarPDFs);
 
         function baixar(dados, nomeArquivo, tipo) {
             const arquivo = new Blob([dados], { type: tipo });
